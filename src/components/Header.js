@@ -1,18 +1,16 @@
-import { useHistory } from 'react-router-dom'
 import { FaSignOutAlt } from 'react-icons/fa';
 
-const Header = ({ loggedIn, setLoggedIn }) => {
-    let history = useHistory();
+const Header = ({ loggedIn, setLoggedIn, setLists }) => {
 
-    const logout = () => {
-        setLoggedIn(false)
-        history.push("/");
+    const handleLogout = () => {
+        setLists([])
+        setLoggedIn({})
     }
 
     return (
         <header>
             <span>ToDo-List</span>
-            {loggedIn ? <FaSignOutAlt role="button" tabIndex="0" onClick={logout} /> : ''}
+            {(loggedIn.hasOwnProperty("user") ?? loggedIn.user.id) ? <FaSignOutAlt role="button" onClick={handleLogout} /> : ''}
         </header>
     )
 }

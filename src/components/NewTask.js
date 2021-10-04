@@ -1,7 +1,7 @@
-const NewTask = ({ newTask, listId, handleAddTask, setNewTask }) => {
+const NewTask = ({ newTask, setNewTask, handleAddTask }) => {
     return (
         <li className="TaskElement">
-            <form onSubmit={(e) => handleAddTask(e, listId)} >
+            <form onSubmit={(e) => handleAddTask(e)} >
                 <input
                     id="addTaskCheckBox"
                     type="checkbox"

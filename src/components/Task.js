@@ -1,20 +1,20 @@
 import { FaTrashAlt } from 'react-icons/fa';
 
-const Task = ({ item, listId, handleChangeCheckbox, handleChangeTaskName, handleDeleteTask }) => {
+const Task = ({ item, handleChangeCheckbox, handleChangeTaskName, handleDeleteTask }) => {
     return (
-        <li className="TaskElement" key={item.id}>
+        <li className="TaskElement">
             <input
-                onChange={() => handleChangeCheckbox(listId, item.id)}
+                onChange={() => handleChangeCheckbox(item.id)}
                 type="checkbox"
                 checked={item.isDone}
             />
             <input
-                onChange={(e) => handleChangeTaskName(e, listId, item.id)}
+                onChange={(e) => handleChangeTaskName(e, item.id)}
                 type="text"
                 placeholder="Task name"
                 value={item.name}
             />
-            <FaTrashAlt className="trashButton" role="button" tabIndex="0" onClick={() => handleDeleteTask(listId, item.id)} />
+            <FaTrashAlt className="trashButton" role="button" tabIndex="0" onClick={() => handleDeleteTask(item.id)} />
         </li>
     )
 }

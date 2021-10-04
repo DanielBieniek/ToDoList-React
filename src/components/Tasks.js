@@ -1,85 +1,141 @@
 import { useHistory, useParams } from 'react-router-dom'
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Task from './Task'
 import NewTask from './NewTask'
 
-const Tasks = ({ lists, setLists }) => {
+const Tasks = ({ lists, setLists, auth }) => {
     let history = useHistory();
     let { id } = useParams();
-    let list = lists.filter((list) => list.id === parseInt(id))[0];
-    let nextTaskId = list.task.length ? list.task[list.task.length - 1].id + 1 : 1;
+
+    const [list, setList] = useState({
+        'name': "",
+        'task': [],
+    });
 
     const [newTask, setNewTask] = useState({
-        'id': nextTaskId,
+        'id': 1,
         'name': '',
         'isDone': false
     });
 
-    const handleChangeCheckbox = (listId, itemId) => {
-        const tempList = lists.map(list => list.id === listId ? { ...list, task: list.task.map(item => item.id === itemId ? { ...item, isDone: !item.isDone } : item) } : list);
-        setLists(tempList)
+    useEffect(() => {
+        const readTask = async () => {
+            let readTaskRequestResult = await fetch("https://recruitment.ultimate.systems/to-do-lists/" + id, {
+                method: 'GET',
+                headers: {
+                    "Authorization": "Bearer " + auth,
+                    "Accept": "application/json"
+                }
+            });
+            readTaskRequestResult = await readTaskRequestResult.json();
+
+            if (readTaskRequestResult.hasOwnProperty("id")) {
+                setList({
+                    'name': readTaskRequestResult.name,
+                    'task': readTaskRequestResult.task
+                });
+                setNewTask({ ...newTask, id: readTaskRequestResult.task.length ? readTaskRequestResult.task[readTaskRequestResult.task.length - 1].id + 1 : 1 });
+            }
+        }
+        (async () => await readTask())();
+    }, [])
+
+    const handleChangeListName = (e) => {
+        const tempList = { ...list, name: e.target.value };
+        setList(tempList);
     }
 
-    const handleChangeTaskName = (e, listId, itemId) => {
-        const tempList = lists.map(list => list.id === listId ? { ...list, task: list.task.map(item => item.id === itemId ? { ...item, name: e.target.value } : item) } : list);
-        setLists(tempList)
+    const handleChangeCheckbox = (itemId) => {
+        const tempList = { ...list, task: list.task.map(item => item.id === itemId ? { ...item, isDone: !item.isDone } : item) };
+        setList(tempList);
     }
 
-    const handleChangeListName = (e, listId) => {
-        const tempList = lists.map(list => list.id === listId ? { ...list, name: e.target.value } : list);
-        setLists(tempList)
+    const handleChangeTaskName = (e, itemId) => {
+        const tempList = { ...list, task: list.task.map(item => item.id === itemId ? { ...item, name: e.target.value } : item) };
+        setList(tempList);
     }
 
-    const handleDeleteTask = (listId, itemId) => {
-        const tempList = lists.map(list => list.id === listId ? { ...list, task: list.task.filter(item => item.id !== itemId) } : list);
-        setLists(tempList)
+
+    const handleDeleteTask = (itemId) => {
+        const tempList = { ...list, task: list.task.filter(item => item.id !== itemId) };
+        setList(tempList);
     }
 
-    const handleAddTask = (e, listId) => {
+    const handleAddTask = (e) => {
         e.preventDefault();
-        const tempList = lists.map(list => list.id === listId ? { ...list, task: list.task.concat(newTask) } : list)
-        setLists(tempList);
+        const tempList = { ...list, task: list.task.concat(newTask) };
+        setList(tempList);
         setNewTask({
-            'id': ++nextTaskId,
+            'id': newTask.id + 1,
             'name': '',
             'isDone': false
         });
     }
 
-    const handleSaveList = () => {
+    const handleSaveList = async () => {
+
+        const putListObject = {
+            'name': list.name,
+            'task': list.task.map(task => {
+                return {
+                    'name': task.name,
+                    'isDone': task.isDone
+                }
+            })
+        };
+
+        let putListRequestResult = await fetch("https://recruitment.ultimate.systems/to-do-lists/" + id, {
+            method: 'PUT',
+            headers: {
+                "Authorization": "Bearer " + auth,
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify(putListObject)
+        });
+        putListRequestResult = await putListRequestResult.json();
+
+        if (putListRequestResult.hasOwnProperty("id")) {
+            history.push("/list");
+        }
+    }
+
+    const handleCancel = () => {
         history.push("/list");
     }
 
-    if (lists.findIndex((t) => t.id === parseInt(id)) < 0) {
+    if (lists.findIndex((list) => list.id === parseInt(id)) < 0) {
         history.push("/");
     }
 
     return (
         <div className="Tasks">
-            {lists.findIndex((list) => list.id === parseInt(id)) < 0 ? '' : <>
-                <input onChange={(e) => handleChangeListName(e, list.id)} type="text" placeholder="List name" value={list.name} />
-                <ul className="TaskList">
-                    {list.task.map(item =>
-                        <Task
-                            item={item}
-                            listId={list.id}
-                            handleChangeCheckbox={handleChangeCheckbox}
-                            handleChangeTaskName={handleChangeTaskName}
-                            handleDeleteTask={handleDeleteTask}
-                        />
-                    )}
-                    <NewTask
-                        newTask={newTask}
-                        listId={list.id}
-                        handleAddTask={handleAddTask}
-                        setNewTask={setNewTask}
+            <input
+                onChange={(e) => handleChangeListName(e)}
+                type="text"
+                placeholder="List name"
+                value={list.name}
+            />
+            <ul className="TaskList">
+                {list.task.map(item =>
+                    <Task
+                        key={item.id}
+                        item={item}
+                        handleChangeCheckbox={handleChangeCheckbox}
+                        handleChangeTaskName={handleChangeTaskName}
+                        handleDeleteTask={handleDeleteTask}
                     />
-                </ul>
-                <div className="TaskNav">
-                    <span></span>
-                    <button onClick={handleSaveList} className="SaveList">SAVE</button>
-                </div>
-            </>}
+                )}
+                <NewTask
+                    newTask={newTask}
+                    handleAddTask={handleAddTask}
+                    setNewTask={setNewTask}
+                />
+            </ul>
+            <div className="TaskNav">
+                <button onClick={handleCancel} className="Cancel">CANCEL</button>
+                <button onClick={handleSaveList}>SAVE</button>
+            </div>
         </div >
     )
 }

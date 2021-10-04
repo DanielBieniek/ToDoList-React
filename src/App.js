@@ -7,11 +7,11 @@ import { useState, useEffect } from 'react';
 import { Route, Switch, Redirect } from 'react-router-dom'
 
 function App() {
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [loggedIn, setLoggedIn] = useState({});
   const [lists, setLists] = useState([]);
 
   useEffect(() => {
-    setLoggedIn(JSON.parse(localStorage.getItem('loggedIn')) || false);
+    setLoggedIn(JSON.parse(localStorage.getItem('loggedIn')) || {});
     setLists(JSON.parse(localStorage.getItem('ToDoList')) || []);
   }, [])
 
@@ -20,25 +20,29 @@ function App() {
   }, [lists])
 
   useEffect(() => {
-    localStorage.setItem('loggedIn', JSON.stringify(loggedIn));
+    if (loggedIn.hasOwnProperty("user")) {
+      localStorage.setItem('loggedIn', JSON.stringify(loggedIn));
+    } else {
+      localStorage.removeItem('loggedIn');
+    }
   }, [loggedIn])
 
   return (
     <div className="App">
-      <Header loggedIn={loggedIn} setLoggedIn={setLoggedIn} />
+      <Header loggedIn={loggedIn} setLoggedIn={setLoggedIn} setLists={setLists} />
       <main>
         <Switch>
           <Route exact path="/">
-            {loggedIn ? <Redirect to="/list" /> : <Login setLoggedIn={setLoggedIn} />}
+            {(loggedIn.hasOwnProperty("user") ?? loggedIn.user.id) ? <Redirect to="/list" /> : <Login loggedIn={loggedIn} setLoggedIn={setLoggedIn} />}
           </Route>
           <Route path="/register">
-            {loggedIn ? <Redirect to="/list" /> : <Register setLoggedIn={setLoggedIn} />}
+            {(loggedIn.hasOwnProperty("user") ?? loggedIn.user.id) ? <Redirect to="/list" /> : <Register loggedIn={loggedIn} setLoggedIn={setLoggedIn} />}
           </Route>
           <Route exact path="/list">
-            {!loggedIn ? <Redirect to="/" /> : <ToDoList lists={lists} setLists={setLists} />}
+            {!(loggedIn.hasOwnProperty("user") ?? loggedIn.user.id) ? <Redirect to="/" /> : <ToDoList lists={lists} setLists={setLists} auth={loggedIn.jwt} />}
           </Route>
           <Route path="/list/:id">
-            {!loggedIn ? <Redirect to="/" /> : <Tasks lists={lists} setLists={setLists} />}
+            {!(loggedIn.hasOwnProperty("user") ?? loggedIn.user.id) ? <Redirect to="/" /> : <Tasks lists={lists} setLists={setLists} auth={loggedIn.jwt} />}
           </Route>
           <Route path="*">
             <div>404 - webpage not found</div>
